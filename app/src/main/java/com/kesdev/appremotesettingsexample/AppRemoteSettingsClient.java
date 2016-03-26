@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
@@ -16,21 +17,24 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class AppRemoteSettingsClient {
 
-    private abstract static class Handler {
-        public abstract void onResult(String s);
+    public abstract static class Handler<T> {
+        public abstract void onResult(T t);
     }
 
     private static class JsonPostRequestHandler {
         HttpsURLConnection connection;
         String body;
-        Handler handler;
+        Handler<String> handler;
 
-        public JsonPostRequestHandler(String url, JSONObject data, Handler handler)
+        public JsonPostRequestHandler(String url, JSONObject data, Handler<String> handler)
                 throws IOException {
 
             connection = (HttpsURLConnection) new URL(url).openConnection();
@@ -103,42 +107,85 @@ public class AppRemoteSettingsClient {
 
         @Override
         protected void onPostExecute(String s) {
-            if (requestHandler.handler != null) requestHandler.handler.onResult(s);
+            if (requestHandler.handler != null && s != null) requestHandler.handler.onResult(s);
         }
     }
 
     public static final String TAG = "AppRemoteSettingsClient";
 
-    public static void fetchRawJsonFromAppRemoteSettings(
-            Context context, String endpointAPIv1, Handler handler) {
+    private static void fetchRawJsonFromAppRemoteSettings(
+            Context context, String endpointAPIv1, Handler<String> handler) {
 
         try {
             JSONObject data = new JSONObject();
             data.put("app_id", context.getPackageName());
             data.put("format", "json_annotated");
-
-            JsonPostRequestHandler requestHandler =
-                    new JsonPostRequestHandler(endpointAPIv1, data, handler);
-            new HttpPostTask().execute(requestHandler);
+            new HttpPostTask().execute(new JsonPostRequestHandler(endpointAPIv1, data, handler));
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void parseRawJsonIntoSharedPreferences(SharedPreferences preferences) {
+    private static Map<String, String> parseRawJsonIntoSharedPreferences(
+            String rawJson, SharedPreferences preferences) {
 
+        SharedPreferences.Editor editor = preferences.edit();
+        Map<String, String> added = new HashMap<>();
+
+        try {
+            JSONObject parsed = new JSONObject(rawJson);
+            JSONObject types = parsed.getJSONObject("types");
+            JSONObject values = parsed.getJSONObject("values");
+            Iterator<String> keys = types.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                String type = types.getString(key);
+
+                if (type.equals("bool")) {
+                    editor.putBoolean(key, values.getBoolean(key));
+                } else if (type.equals("int")) {
+                    editor.putLong(key, values.getLong(key));
+                } else if (type.equals("float")) {
+                    editor.putFloat(key, (float) values.getDouble(key));
+                } else if (type.equals("string")) {
+                    editor.putString(key, values.getString(key));
+                }
+
+                added.put(key, type);
+            }
+
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON processing failed");
+            e.printStackTrace();
+            return null;
+        }
+
+        boolean success = editor.commit();
+        if (!success) {
+            Log.e(TAG, "Failed to commit preferences");
+            return null;
+        }
+
+        return added;
     }
 
     public static void updatePreferencesWithAppRemoteSettings(
-            Context context, String endpointAPIv1, SharedPreferences preferences) {
+            Context context, String endpointAPIv1, final SharedPreferences preferences,
+            final Handler<Map<String, String>> onSuccess) {
 
-        fetchRawJsonFromAppRemoteSettings(context, endpointAPIv1, new Handler() {
+        fetchRawJsonFromAppRemoteSettings(context, endpointAPIv1, new Handler<String>() {
             @Override
-            public void onResult(String s) {
-                Log.d(TAG, s);
+            public void onResult(String rawJson) {
+                Map<String, String> added = parseRawJsonIntoSharedPreferences(rawJson, preferences);
+                if (onSuccess != null) onSuccess.onResult(added);
             }
         });
+    }
+
+    public static void updatePreferencesWithAppRemoteSettings(
+            Context context, String endpointAPIv1, final SharedPreferences preferences) {
+        updatePreferencesWithAppRemoteSettings(context, endpointAPIv1, preferences, null);
     }
 
 }
