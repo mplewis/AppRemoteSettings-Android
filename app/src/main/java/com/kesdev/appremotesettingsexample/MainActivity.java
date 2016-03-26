@@ -9,5 +9,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        AppRemoteSettingsClient.updatePreferencesWithAppRemoteSettings(this,
+                "https://appremotesettings-herokuapp-com-nz573rgl9zyn.runscope.net/api/v1/",
+                null
+        );
     }
 }
