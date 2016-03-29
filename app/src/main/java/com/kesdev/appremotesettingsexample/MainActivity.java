@@ -11,35 +11,40 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
 
-    // To use the same SharedPreferences across activities, call this.getSharedPreferences with
-    // the same key in each activity. MODE_PRIVATE is the only valid access mode for
-    // SharedPreferences.
-    final SharedPreferences prefs = this.getSharedPreferences("APPLICATION", MODE_PRIVATE);
-
     // This is the demo instance of AppRemoteSettings. Point this URL to your own server.
     private static final String APP_REMOTE_SETTINGS_SERVER =
             "https://appremotesettings.herokuapp.com/api/v1/";
+
+    // 1. Get a copy of the SharedPreferences object you want to use throughout your app
+    //
+    // To use the same SharedPreferences across activities, call this.getSharedPreferences with
+    // the same key in each activity. MODE_PRIVATE is the only valid access mode for
+    // SharedPreferences.
+    //
+    // In this example, we get settings for the key "prefs". The key can be whatever you want.
+    //
+    final SharedPreferences prefs = this.getSharedPreferences("prefs", MODE_PRIVATE);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 1. Launch your app's main activity
+        // 2. Launch your app's main activity
         //
         // The first time your app is launched, settings will all be unset.
         //
         Log.i(TAG, "App launched");
         printPreferences(prefs);
 
-        // 2. OPTIONAL: Set up a handler for AppRemoteSettings completion
+        // OPTIONAL: Set up a handler for AppRemoteSettings completion
         //
         // When AppRemoteSettingsClient successfully updates the local settings, it will call the
         // onResult method of the AppRemoteSettingsClient.Handler passed in.
         //
         // The object passed as a parameter is a map. Keys are the keys added to the
         // SharedPreferences, while values represent what type each key was
-        // ("string", "bool", "int", "float").
+        // {"key1": "bool", "key2": "float", "key3": "int", "key4": "long", ...}
         //
         AppRemoteSettingsClient.Handler<Map<String, String>> handler =
                 new AppRemoteSettingsClient.Handler<Map<String, String>>() {
