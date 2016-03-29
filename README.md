@@ -20,7 +20,7 @@ There is no Maven Central package at this time.
 
 1. Get a copy of your SharedPreferences object to use throughout your app with [`this.getSharedPreferences(...)`](app/src/main/java/com/kesdev/appremotesettingsexample/MainActivity.java#L18-L26)
 2. Call [`AppRemoteSettingsClient.updatePreferencesWithAppRemoteSettings(...)`](app/src/main/java/com/kesdev/appremotesettingsexample/MainActivity.java#L58-L70) in your main Activity's OnCreate method
-3. Replace your hardcoded variables with values from [`this.getSharedPreferences(...)`](app/src/main/java/com/kesdev/appremotesettingsexample/MainActivity.java#L83-L93), adding default values for offline development
+3. Replace your hardcoded variables with values from [`prefs.getType(...)`](app/src/main/java/com/kesdev/appremotesettingsexample/MainActivity.java#L83-L93), adding default values for offline development
 4. Change values in the AppRemoteSettings Dashboard to update them in your production apps.
 
 # Contributions
