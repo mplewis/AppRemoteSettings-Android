@@ -3,6 +3,7 @@ package com.kesdev.appremotesettingsexample;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -91,8 +92,13 @@ public class AppRemoteSettingsClient {
 
         try {
             JSONObject data = new JSONObject();
+
             data.put("app_id", context.getPackageName());
+            data.put("build_number", BuildConfig.VERSION_CODE);
+            data.put("app_version", BuildConfig.VERSION_NAME);
+            data.put("os_version", Build.VERSION.SDK_INT);
             data.put("format", "json_annotated");
+
             new HttpPostTask().execute(new JsonPostRequestHandler(endpointAPIv1, data, handler));
 
         } catch (Exception e) {
